@@ -3,11 +3,14 @@
 ###########################################################################################
 
 plotGene <- function(genelist, umi, dir){
-    # Store the current default layer
+  # Store the current default layer
   orig_default <- DefaultLayer(umi[["RNA"]])
   
   # Set counts as the default layer
   DefaultLayer(umi[["RNA"]]) <- "counts"
+  
+  # Create a temporary "data" layer pointing to counts for FeatureScatter
+  umi[["RNA"]]$data <- umi[["RNA"]]$counts
   ### Density plot
   suppressWarnings({pdf(file.path(dir, paste0("01d_QC_Hist_Check.pdf")), useDingbats=FALSE)
     cat(crayon::bold(crayon::green("Plotting QC per gene Histograms \n")))
@@ -95,7 +98,9 @@ plotGene <- function(genelist, umi, dir){
     invisible(dev.off())})
   cat(paste0(crayon::silver("Plots saved in: ")),crayon::bold(crayon::silver("01.QC_Plots\\01e_QC_Scatter_Check.pdf \n")))
   cat(paste0(crayon::cyan("\nNow check the graphs, choose your thresholds and then run")),crayon::bold(crayon::cyan("FilterPlots \n")))
+  umi[["RNA"]]$data <- NULL
   DefaultLayer(umi[["RNA"]]) <- orig_default
+  return(umi) 
 }
 
 
@@ -248,7 +253,15 @@ FTP <- function(data, directory, graph_value, dimensional_redux, H, to_be_plotte
 }
 
 VLN <- function(data, H, feats, colours=NULL, point=FALSE){
-  VlnPlot(data, features=feats, cols=colours, pt.size=point) + ggplot2::geom_boxplot(width=0.1, outlier.shape=NA)
+  # For metadata features, we don't need the data layer
+  if (feats %in% colnames(data@meta.data)) {
+    VlnPlot(data, features=feats, cols=colours, pt.size=point) + 
+      ggplot2::geom_boxplot(width=0.1, outlier.shape=NA)
+  } else {
+    # For gene expression, specify the layer explicitly
+    VlnPlot(data, features=feats, cols=colours, pt.size=point, layer="counts") + 
+      ggplot2::geom_boxplot(width=0.1, outlier.shape=NA)
+  }
 }
 
 DTP <- function(data, markers, annotation){
