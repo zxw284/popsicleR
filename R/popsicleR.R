@@ -3,9 +3,14 @@
 ###########################################################################################
 
 plotGene <- function(genelist, umi, dir){
+    # Store the current default layer
+  orig_default <- DefaultLayer(umi[["RNA"]])
+  
+  # Set counts as the default layer
+  DefaultLayer(umi[["RNA"]]) <- "counts"
   ### Density plot
   suppressWarnings({pdf(file.path(dir, paste0("01d_QC_Hist_Check.pdf")), useDingbats=FALSE)
-    cat(bold(green("Plotting QC per gene Histograms \n")))
+    cat(crayon::bold(crayon::green("Plotting QC per gene Histograms \n")))
     for(gene in genelist)
     {
       if(gene %in% row.names(GetAssayData(umi, assay = "RNA", layer = "counts"))) {
@@ -28,10 +33,10 @@ plotGene <- function(genelist, umi, dir){
       }
     }
     invisible(dev.off())})
-  cat(paste0(silver("Plots saved in: ")),bold(silver("01.QC_Plots\\01d_QC_Hist_Check.pdf \n")))
+  cat(paste0(crayon::silver("Plots saved in: ")),crayon::bold(crayon::silver("01.QC_Plots\\01d_QC_Hist_Check.pdf \n")))
   ### Scatter Plot
   suppressWarnings({pdf(file.path(dir, paste0("01e_QC_Scatter_Check.pdf")), useDingbats=FALSE)
-    cat(bold(green("Plotting QC per gene Scatter plots \n")))
+    cat(crayon::bold(crayon::green("Plotting QC per gene Scatter plots \n")))
     for(gene in genelist)
     {
       if(gene %in% row.names(GetAssayData(umi, assay = "RNA", layer = "counts"))) {
@@ -72,13 +77,12 @@ plotGene <- function(genelist, umi, dir){
 
         # number of genes vs single marker expression
 
-        mp1<-FeatureScatter(umi, feature1="nFeature_RNA", feature2=gene, pt.size=0.2, group.by=expr_gene) +
+        mp1<-FeatureScatter(umi, feature1="nFeature_RNA", feature2=gene, pt.size=0.2, group.by=expr_gene, layer="counts") +
           ggplot2::ylab(paste0(as.character(gene)," counts")) +
           ggplot2::ggtitle(" ") +
           guides(colour = guide_legend(paste0(as.character(gene),"+")))+
           theme(text=element_text(size=10),axis.title=element_text(size=10))
-        mp2<-FeatureScatter(umi, feature1="nFeature_RNA", feature2=gene, pt.size=0.2, group.by=expr_gene) +
-          ggplot2::ylab(paste0(as.character(gene)," counts")) +
+        mp2<-FeatureScatter(umi, feature1="nFeature_RNA", feature2=gene, pt.size=0.2, group.by=expr_gene, layer="counts") +
           ggplot2::xlim(0,x.zoom.genes) +
           ggplot2::ggtitle(" ") +
           guides(colour = guide_legend(paste0(as.character(gene),"+")))+
@@ -89,9 +93,9 @@ plotGene <- function(genelist, umi, dir){
       }
     }
     invisible(dev.off())})
-  cat(paste0(silver("Plots saved in: ")),bold(silver("01.QC_Plots\\01e_QC_Scatter_Check.pdf \n")))
-  cat(paste0(cyan("\nNow check the graphs, choose your thresholds and then run")),bold(cyan("FilterPlots \n")))
-
+  cat(paste0(crayon::silver("Plots saved in: ")),crayon::bold(crayon::silver("01.QC_Plots\\01e_QC_Scatter_Check.pdf \n")))
+  cat(paste0(crayon::cyan("\nNow check the graphs, choose your thresholds and then run")),crayon::bold(crayon::cyan("FilterPlots \n")))
+  DefaultLayer(umi[["RNA"]]) <- orig_default
 }
 
 
@@ -386,7 +390,7 @@ PrePlots <- function(sample_name, input_data, genelist=NULL, percentage=0.1, gen
     umi[["percent_disso"]] <- PercentageFeatureSet(umi, pattern = dissociation_genes)
   } else {stop("organism must be human or mouse")}
   ### Violin Plot on number of genes, number of UMI and fraction of mitochondrial genes
-  cat(bold(green("\nPlotting QC Violin plots \n")))
+  cat(crayon::bold(crayon::green("\nPlotting QC Violin plots \n")))
   suppressWarnings({pdf(paste0(QC_dir, "01a_QC_violin_plots.pdf"), width=24, useDingbats=FALSE)
     vln1 <- popsicleR:::VLN(umi, 10, feats="nFeature_RNA", colours= "tomato", 0.01)+ NoLegend() + theme(axis.text.x=element_text(angle=0, hjust=0.5)) + ggplot2::xlab("")
     vln2 <- popsicleR:::VLN(umi, 10, feats="nCount_RNA", colours= "tomato", 0.01)+ NoLegend() + theme(axis.text.x=element_text(angle=0, hjust=0.5)) + ggplot2::xlab("")
@@ -396,9 +400,9 @@ PrePlots <- function(sample_name, input_data, genelist=NULL, percentage=0.1, gen
     print(patchwork::wrap_plots(vln1 | vln2 | vln3 | vln4 | vln5 + plot_layout(guides = 'collect') + NoLegend()) +
             plot_annotation(theme=theme(plot.title = element_text(hjust = 0.5, face="bold"))))
     invisible(dev.off())})
-  cat(paste0(silver("Plots saved in: ")),bold(silver("01.QC_Plots\\01a_QC_violin_plots.pdf \n")))
+  cat(paste0(crayon::silver("Plots saved in: ")),crayon::bold(crayon::silver("01.QC_Plots\\01a_QC_violin_plots.pdf \n")))
   ### Density plot
-  cat(bold(green("Plotting QC Density plots \n")))
+  cat(crayon::bold(crayon::green("Plotting QC Density plots \n")))
   suppressWarnings({pdf(file.path(QC_dir, "01b_QC_Hist_nGene_nUMI_MTf_Ribo.pdf"), useDingbats=FALSE)
     plot.title <- "Density total genes"
     nGene <- ggplot2::ggplot(umi@meta.data, ggplot2::aes(x=nFeature_RNA, color=orig.ident, fill=orig.ident)) +
@@ -433,9 +437,9 @@ PrePlots <- function(sample_name, input_data, genelist=NULL, percentage=0.1, gen
     print(patchwork::wrap_plots(mt_fraction / (ribosomal_fraction + dissociation_fraction) + plot_layout(guides = 'collect') + NoLegend()) +
             plot_annotation(theme=theme(plot.title = element_text(hjust = 0.5, face="bold"))) + NoLegend())
     invisible(dev.off())})
-  cat(paste0(silver("Plots saved in: ")),bold(silver("01.QC_Plots\\01b_QC_Hist_nGene_nUMI_MTf_Ribo.pdf \n")))
+  cat(paste0(crayon::silver("Plots saved in: ")),crayon::bold(crayon::silver("01.QC_Plots\\01b_QC_Hist_nGene_nUMI_MTf_Ribo.pdf \n")))
   ### Scatter Plot
-  cat(bold(green("Plotting QC Scatter plots \n")))
+  cat(crayon::bold(crayon::green("Plotting QC Scatter plots \n")))
   suppressWarnings({pdf(file.path(QC_dir, "01c_QC_Scatter_nGene_nUMI_MTf.pdf"), width=18, height=12, useDingbats=FALSE)
     plotA <- FeatureScatter(umi, feature1="nFeature_RNA", feature2="nCount_RNA", pt.size=0.3, cols="tomato") +  theme(plot.title=element_blank()) + NoLegend()
     plotB <- FeatureScatter(umi, feature1="nFeature_RNA", feature2="percent_mt", pt.size=0.3, cols="dodgerblue") +  theme(plot.title=element_blank()) + NoLegend()
@@ -444,7 +448,7 @@ PrePlots <- function(sample_name, input_data, genelist=NULL, percentage=0.1, gen
     plotE <- FeatureScatter(umi, feature1="nFeature_RNA", feature2="percent_disso", pt.size=0.3, cols="forestgreen") +  theme(plot.title=element_blank())+ NoLegend()
     print(patchwork::wrap_plots(plotA + ggExtra::ggMarginal(plotB, type="density", color="blue", fill="dodgerblue") + ggExtra::ggMarginal(plotC, type="density", color="blue", fill="dodgerblue") + plot_spacer() + ggExtra::ggMarginal(plotD, type="density", color="darkgoldenrod3", fill="yellow") + ggExtra::ggMarginal(plotE, type="density", color="darkgreen", fill="forestgreen") + plot_layout(guides = 'collect')+ NoLegend()))
     invisible(dev.off())})
-  cat(paste0(silver("Plots saved in: ")),bold(silver("01.QC_Plots\\01c_QC_Scatter_nGene_nUMI_MTf.pdf \n")))
+  cat(paste0(crayon::silver("Plots saved in: ")),crayon::bold(crayon::silver("01.QC_Plots\\01c_QC_Scatter_nGene_nUMI_MTf.pdf \n")))
   #
   ###########################################################
   ###   check for presence and number of selected genes   ###
@@ -516,7 +520,7 @@ FilterPlots <- function(UMI, G_RNA_low = 0, G_RNA_hi = Inf, U_RNA_low = 0, U_RNA
   # percent_disso: percentage of dissociation genes (previously calculated)
   umi <- UMI
   umi$filtered <- umi$nFeature_RNA <= G_RNA_low | umi$nFeature_RNA >= G_RNA_hi | umi$percent_mt >= percent_mt_hi | umi$nCount_RNA >=  U_RNA_hi | umi$nCount_RNA <=  U_RNA_low | umi$percent_ribo >= percent_ribo_hi| umi$percent_disso >= percent_disso_hi
-  cat(bold(green("The selected thresholds will filter",sum(umi$filtered) ,"cells\n")))
+  cat(crayon::bold(crayon::green("The selected thresholds will filter",sum(umi$filtered) ,"cells\n")))
 
   ### set thresholds vlines and hlines for ggplot
   genes.dn.lim <- ggplot2::geom_vline(xintercept=G_RNA_low, linetype="dashed", color="darkgrey")
@@ -537,7 +541,7 @@ FilterPlots <- function(UMI, G_RNA_low = 0, G_RNA_hi = Inf, U_RNA_low = 0, U_RNA
   disso.dn.lim <- ggplot2::geom_vline(xintercept=percent_disso_hi, linetype="dashed", color="darkgrey")
   disso.dn.lim.y <- ggplot2::geom_hline(yintercept=percent_disso_hi, linetype="dashed", color="darkgrey")
   ### distribution of total number of gene detected per cell
-  cat(bold(green("\nPlotting QC final plots")))
+  cat(crayon::bold(crayon::green("\nPlotting QC final plots")))
   suppressWarnings({pdf(paste0(QC_dir, "/01f_final_Hist_plots.pdf"), useDingbats=FALSE)
     plot.title <- "Density total genes"
     final <- ggplot2::ggplot(umi@meta.data, ggplot2::aes(x=nFeature_RNA, color=orig.ident, fill=orig.ident)) +
@@ -574,9 +578,9 @@ FilterPlots <- function(UMI, G_RNA_low = 0, G_RNA_hi = Inf, U_RNA_low = 0, U_RNA
       theme(plot.title = element_text(hjust = 0.5, face ="bold")) + NoLegend() + theme(axis.title.y = element_blank(),axis.text.y = element_blank(),axis.ticks.y = element_blank()) + disso.dn.lim
     print(patchwork::wrap_plots(final4/(final5 + final6) + plot_layout(guides = 'collect')))})
   invisible(dev.off())
-  cat(paste0(silver("\nPlots saved in: ")),bold(silver("01.QC_Plots\\01f_final_Hist_plots.pdf \n")))
+  cat(paste0(crayon::silver("\nPlots saved in: ")),crayon::bold(crayon::silver("01.QC_Plots\\01f_final_Hist_plots.pdf \n")))
 
-  cat(bold(green("Plotting QC final scatter plots \n")))
+  cat(crayon::bold(crayon::green("Plotting QC final scatter plots \n")))
   suppressWarnings({pdf(paste0(QC_dir, "/01g_final_Scatter_plots.pdf"),width=18, height=12, useDingbats=FALSE)
     plot1 <- FeatureScatter(umi, feature1="nFeature_RNA", feature2="nCount_RNA", pt.size = 0.3, group.by = "filtered")+ scale_color_manual(values = c("tomato", "#666666")) +  theme(plot.title=element_blank()) +
       genes.dn.lim + genes.up.lim + umi.dn.lim.y + umi.up.lim.y + NoLegend()
@@ -590,7 +594,7 @@ FilterPlots <- function(UMI, G_RNA_low = 0, G_RNA_hi = Inf, U_RNA_low = 0, U_RNA
       genes.dn.lim + genes.up.lim + disso.dn.lim.y  + NoLegend()
     print(patchwork::wrap_plots(plot1 + plot2 + plot3 + plot_spacer() + plot4 + plot5+ plot_layout(guides = 'collect') + NoLegend()))
     invisible(dev.off())})
-  cat(paste0(silver("Plots saved in: ")),bold(silver("01.QC_Plots\\01g_final_Scatter_plots.pdf \n")))
+  cat(paste0(crayon::silver("Plots saved in: ")),crayon::bold(crayon::silver("01.QC_Plots\\01g_final_Scatter_plots.pdf \n")))
   umi <- subset(umi, subset = nFeature_RNA > G_RNA_low &
                   nFeature_RNA < G_RNA_hi &
                   nCount_RNA   > U_RNA_low &
@@ -599,8 +603,8 @@ FilterPlots <- function(UMI, G_RNA_low = 0, G_RNA_hi = Inf, U_RNA_low = 0, U_RNA
                   percent_ribo < percent_ribo_hi &
                   percent_disso < percent_disso_hi)
 
-  cat(paste0(cyan("\nNext suggested step is Doublets Calculation, run")),bold(cyan("CalculateDoublets \n")))
-  cat(paste0(bold(cyan("\nWARNING: \n")),cyan("It is recommended to first run CalculateDoublets step setting "), bold(cyan("dbs_thr ='none' ")),cyan("or "),bold(cyan("dbs_rate =NULL ")),cyan("and "),  bold(cyan("dbs_remove= FALSE. \n")), cyan("Once checked the graphs it is possible to re-run this step specifying a custom threshold \nthrough the 'dbs_thr' or 'dbs_rate' parameter and removing all the cells identified as doublets setting 'dbs_remove' parameter as TRUE. \n")))
+  cat(paste0(crayon::cyan("\nNext suggested step is Doublets Calculation, run")),crayon::bold(crayon::cyan("CalculateDoublets \n")))
+  cat(paste0(crayon::bold(crayon::cyan("\nWARNING: \n")),crayon::cyan("It is recommended to first run CalculateDoublets step setting "), crayon::bold(crayon::cyan("dbs_thr ='none' ")),crayon::cyan("or "),crayon::bold(crayon::cyan("dbs_rate =NULL ")),crayon::cyan("and "),  crayon::bold(crayon::cyan("dbs_remove= FALSE. \n")), crayon::cyan("Once checked the graphs it is possible to re-run this step specifying a custom threshold \nthrough the 'dbs_thr' or 'dbs_rate' parameter and removing all the cells identified as doublets setting 'dbs_remove' parameter as TRUE. \n")))
 
   ### write log
   write.table(t(c(as.character(as.POSIXct(Sys.time())),"FilterPlots:","G_RNA_low",G_RNA_low,"G_RNA_hi", G_RNA_hi, "U_RNA_low",U_RNA_low,"U_RNA_hi",U_RNA_hi,"percent_mt_hi",percent_mt_hi,"percent_ribo_hi",percent_ribo_hi,"percent_disso_hi",percent_disso_hi)),file=file.path(out_folder,"popsicleR.log"), sep="\t", row.names=F, col.names=F, quote=F, append=T)
@@ -692,24 +696,24 @@ CalculateDoublets <- function(UMI, method=c("scrublet","scDblFinder"), dbs_thr='
     UMI2 <- suppressWarnings(RunUMAP(UMI2, dims=1:10, verbose=FALSE))
     Idents(UMI2) <- "doublets"
     highlight_labels <- list("doublet"= WhichCells(UMI2, idents = TRUE), "singlet"= WhichCells(UMI2, idents = FALSE))
-    cat(bold(green("Plotting doublets UMAP \n")))
+    cat(crayon::bold(crayon::green("Plotting doublets UMAP \n")))
     pdf(paste0(QC_dir,"/01h_doublets_umap.pdf"),15,8, useDingbats=FALSE)
     p1 <- DimPlot(UMI2, reduction="umap", group.by = "doublets", pt.size=0.5, cols=c("lightgrey"), cells.highlight = highlight_labels, cols.highlight = "black")+ ggplot2::xlab("UMAP 1") +ggplot2::ylab("UMAP 2")
     p2 <- FeaturePlot(UMI2, reduction="umap", features="doublets_score", pt.size=0.5) +scale_colour_gradientn(colours=c("lightgrey", "red", "darkred", "black"))+ ggplot2::xlab("UMAP 1") +ggplot2::ylab("UMAP 2")
     print(patchwork::wrap_plots(p1 | p2 + plot_layout(guides = 'collect')))
     dev.off()
-    cat(paste0(silver("Plots saved in: ")),bold(silver("01.QC_Plots\\01h_doublets_umap.pdf \n")))
-    cat(paste0(cyan("Once checked the graphs it is possible to re-run this step specifying a custom threshold through the 'dbs_thr' parameter and removing all the cells identified as doublets setting 'dbs_remove' parameter as TRUE. \n")))
+    cat(paste0(crayon::silver("Plots saved in: ")),crayon::bold(crayon::silver("01.QC_Plots\\01h_doublets_umap.pdf \n")))
+    cat(paste0(crayon::cyan("Once checked the graphs it is possible to re-run this step specifying a custom threshold through the 'dbs_thr' parameter and removing all the cells identified as doublets setting 'dbs_remove' parameter as TRUE. \n")))
     if(dbs_remove == TRUE){
-      cat(paste0(green("Removing", sum(UMI$doublets) ,"Doublets \n")))
+      cat(paste0(crayon::green("Removing", sum(UMI$doublets) ,"Doublets \n")))
       UMI <- UMI[,!UMI$doublets]
     }
   }else{
     UMI$doublets <- ifelse(UMI$scrublet_score > dbs_thr, TRUE, FALSE)
     if(dbs_remove == TRUE){
-      cat(paste0(green("Removing", sum(UMI$doublets) ,"Doublets \n")))
+      cat(paste0(crayon::green("Removing", sum(UMI$doublets) ,"Doublets \n")))
       UMI <- UMI[,!UMI$doublets]
-      cat(paste0(cyan("Next suggested step is data normalization, run")),bold(cyan("Normalize \n")))
+      cat(paste0(crayon::cyan("Next suggested step is data normalization, run")),crayon::bold(crayon::cyan("Normalize \n")))
     }
   }
   } else {
@@ -729,19 +733,19 @@ CalculateDoublets <- function(UMI, method=c("scrublet","scDblFinder"), dbs_thr='
     UMI2 <- suppressWarnings(RunUMAP(UMI2, dims=1:10, verbose=FALSE))
     Idents(UMI2) <- "doublets"
     highlight_labels <- list("doublet"= WhichCells(UMI2, idents = TRUE), "singlet"= WhichCells(UMI2, idents = FALSE))
-    cat(bold(green("Plotting doublets UMAP \n")))
+    cat(crayon::bold(crayon::green("Plotting doublets UMAP \n")))
     pdf(paste0(QC_dir,"/01h_doublets_umap.pdf"),15,8, useDingbats=FALSE)
     p1 <- DimPlot(UMI2, reduction="umap", group.by = "doublets", pt.size=0.5, cols=c("lightgrey"), cells.highlight = highlight_labels, cols.highlight = "black")+ ggplot2::xlab("UMAP 1") +ggplot2::ylab("UMAP 2")
     p2 <- FeaturePlot(UMI2, reduction="umap", features="doublets_score", pt.size=0.5) +scale_colour_gradientn(colours=c("lightgrey", "red", "darkred", "black"))+ ggplot2::xlab("UMAP 1") +ggplot2::ylab("UMAP 2")
     print(patchwork::wrap_plots(p1 | p2 + plot_layout(guides = 'collect')))
     dev.off()
-    cat(paste0(silver("Plots saved in: ")),bold(silver("01.QC_Plots\\01h_doublets_umap.pdf \n")))
-    cat(paste0(cyan("Once checked the graphs it is possible to re-run this step specifying a custom doublet rate through the 'dbs_rate' parameter and removing all the cells identified as doublets setting 'dbs_remove' parameter as TRUE. \n")))
+    cat(paste0(crayon::silver("Plots saved in: ")),crayon::bold(crayon::silver("01.QC_Plots\\01h_doublets_umap.pdf \n")))
+    cat(paste0(crayon::cyan("Once checked the graphs it is possible to re-run this step specifying a custom doublet rate through the 'dbs_rate' parameter and removing all the cells identified as doublets setting 'dbs_remove' parameter as TRUE. \n")))
     if(dbs_remove == TRUE){
-    cat(paste0(green("Removing", sum(UMI$doublets) ,"Doublets \n")))
+    cat(paste0(crayon::green("Removing", sum(UMI$doublets) ,"Doublets \n")))
     UMI <- UMI[,!UMI$doublets]
     }
-   cat(paste0(cyan("Next suggested step is data normalization, run")),bold(cyan("Normalize \n")))
+   cat(paste0(crayon::cyan("Next suggested step is data normalization, run")),crayon::bold(crayon::cyan("Normalize \n")))
    }
   ### write log
   dbs_rate<-ifelse(is.null(dbs_rate),"NULL",dbs_rate)
@@ -787,13 +791,13 @@ Normalize <- function(UMI, variable_genes=2000, out_folder=getwd()){
   PP_dir <- paste0(out_folder,"/02.PreProcessing/")
   if (!file.exists(PP_dir)){dir.create(PP_dir, recursive=T)}
   suppressWarnings({umi <- NormalizeData(object=UMI, normalization.method="LogNormalize", scale.factor=1e4)
-  cat(bold(green("\nPlotting Normalization graphs \n")))
+  cat(crayon::bold(crayon::green("\nPlotting Normalization graphs \n")))
   pdf(paste0(PP_dir, "/02a_total_expression_after_before_norm.pdf"), useDingbats=FALSE)
   par(mfrow = c(2,1))
   hist(colSums(as.matrix(GetAssayData(umi, assay = "RNA", layer = "counts"))), breaks=100, main="Total expression before normalization", xlab="Sum of expression")
   hist(colSums(as.matrix(GetAssayData(umi, assay = "RNA", layer = "data"))), breaks=100, main="Total expression after normalization", xlab="Sum of expression")
   invisible(dev.off())
-  cat(paste0(silver("Plots saved in: ")),bold(silver("02.PreProcessing\\02a_total_expression_after_before_norm.pdf \n")))
+  cat(paste0(crayon::silver("Plots saved in: ")),crayon::bold(crayon::silver("02.PreProcessing\\02a_total_expression_after_before_norm.pdf \n")))
   umi <- FindVariableFeatures(umi, selection.method = "vst", nfeatures = variable_genes)
   # Identify the 10 most highly variable genes
   top10 <- head(VariableFeatures(umi), 10)
@@ -801,12 +805,12 @@ Normalize <- function(UMI, variable_genes=2000, out_folder=getwd()){
   plot1 <- VariableFeaturePlot(umi)
   plot2 <- LabelPoints(plot = plot1, points = top10, repel = TRUE)
   # When using repel, set xnudge and ynudge to 0 for optimal results
-  cat(bold(green("Plotting High Variables Genes \n")))
+  cat(crayon::bold(crayon::green("Plotting High Variables Genes \n")))
   pdf(paste0(PP_dir, "/02b_plot_FindVariableGenes.pdf"), useDingbats=FALSE)
   print(patchwork::wrap_plots(plot1 / plot2 + plot_layout(guides = 'collect')), ncol=1, nrow=2)
-  cat(paste0(silver("Plots saved in: ")),bold(silver("02.PreProcessing\\02b_plot_FindVariableGenes.pdf \n")))
+  cat(paste0(crayon::silver("Plots saved in: ")),crayon::bold(crayon::silver("02.PreProcessing\\02b_plot_FindVariableGenes.pdf \n")))
   invisible(dev.off())})
-  cat(paste0(cyan("Next suggested step is regression, run ")),bold(cyan("ApplyRegression")),cyan("\nIt is suggested to apply regression without providing any variables to regress and without exploring PCs (explore_PC=FALSE) to save time and computational effort.\nRegression variables can be chosen through visual inspection of this function outputs \nOnce selected, set explore_PC as TRUE and explore graphs to identify the PCs number to use in your analysis \n"))
+  cat(paste0(crayon::cyan("Next suggested step is regression, run ")),crayon::bold(crayon::cyan("ApplyRegression")),crayon::cyan("\nIt is suggested to apply regression without providing any variables to regress and without exploring PCs (explore_PC=FALSE) to save time and computational effort.\nRegression variables can be chosen through visual inspection of this function outputs \nOnce selected, set explore_PC as TRUE and explore graphs to identify the PCs number to use in your analysis \n"))
   ### write log
   write.table(t(c(as.character(as.POSIXct(Sys.time())),"Normalize:","variable_genes",variable_genes)),file=file.path(out_folder,"popsicleR.log"), sep="\t", row.names=F, col.names=F, quote=F, append=T)
 
@@ -865,7 +869,7 @@ ApplyRegression <- function(UMI, organism=c("human","mouse"), variables='none', 
   suppressWarnings(if (!file.exists(PP_dir)){dir.create(PP_dir, recursive=T)})
 
   if(!all(c("S.Score", "G2M.Score")%in%colnames(UMI@meta.data))){
-    cat(bold(green("Calculating Cell Cycle Score \n")))
+    cat(crayon::bold(crayon::green("Calculating Cell Cycle Score \n")))
     if(organism == 'human') {
       cc.genes$s.genes <- intersect(cc.genes$s.genes, row.names(GetAssayData(UMI, assay = "RNA", layer = "counts")))
       cc.genes$g2m.genes <- intersect(cc.genes$g2m.genes, row.names(GetAssayData(UMI, assay = "RNA", layer = "counts")))
@@ -890,13 +894,13 @@ ApplyRegression <- function(UMI, organism=c("human","mouse"), variables='none', 
     UMI2 <- suppressMessages(RunTSNE(UMI, dims = 1:20))
     UMI2 <- suppressWarnings(RunUMAP(UMI2, dims = 1:20, verbose=FALSE))
     ### Single pdf with 3 pages, 4 plots per page
-    cat(bold(green("Plotting dimensional reduction graphs with no regression \n")))
+    cat(crayon::bold(crayon::green("Plotting dimensional reduction graphs with no regression \n")))
     pdf(file.path(cycle.dir, "/02c_DimReduction_NoRegression.pdf"), width=14, height=12, useDingbats=FALSE)
     popsicleR:::four_plots(UMI2, "pca")
     popsicleR:::four_plots(UMI2, "tsne")
     popsicleR:::four_plots(UMI2, "umap")
     invisible(dev.off())
-    cat(paste0(silver("Plots saved in: ")),bold(silver("02.PreProcessing dedicated subfolder \n")))
+    cat(paste0(crayon::silver("Plots saved in: ")),crayon::bold(crayon::silver("02.PreProcessing dedicated subfolder \n")))
   } else {
     cycle.dir <- file.path(PP_dir,paste0("Regression_on_",paste(unlist(variables), collapse='_')))
     suppressWarnings(if (!file.exists(cycle.dir)){dir.create(cycle.dir)})
@@ -906,18 +910,18 @@ ApplyRegression <- function(UMI, organism=c("human","mouse"), variables='none', 
     UMI2 <- suppressMessages(RunTSNE(UMI, dims = 1:20))
     UMI2 <- suppressWarnings(RunUMAP(UMI2, dims = 1:20, verbose=FALSE))
     ### PCA plots
-    cat(bold(green("Plotting dimensional reduction graphs after regression \n")))
+    cat(crayon::bold(crayon::green("Plotting dimensional reduction graphs after regression \n")))
     pdf(file.path(cycle.dir, "/02c_DimReduction_PostRegression.pdf"), width=14, height=12, useDingbats=FALSE)
     popsicleR:::four_plots(UMI2, "pca")
     popsicleR:::four_plots(UMI2, "tsne")
     popsicleR:::four_plots(UMI2, "umap")
     invisible(dev.off())
-    cat(paste0(silver("Plots saved in: ")),bold(silver("02.PreProcessing dedicated subfolder \n")))
+    cat(paste0(crayon::silver("Plots saved in: ")),crayon::bold(crayon::silver("02.PreProcessing dedicated subfolder \n")))
   }
 
   ### PC exploration
   if (explore_PC == TRUE){
-    cat(bold(green("Plotting graphs to explore PCs \n")))
+    cat(crayon::bold(crayon::green("Plotting graphs to explore PCs \n")))
     pdf(paste0(cycle.dir, "/02d_VizPCA_HVG.pdf"), useDingbats=FALSE)
     print(VizDimLoadings(UMI, dims = 1:2, reduction = "pca"))
     invisible(dev.off())
@@ -937,8 +941,8 @@ ApplyRegression <- function(UMI, organism=c("human","mouse"), variables='none', 
     pdf(paste0(cycle.dir, "/02g_PCElbowPlot.pdf"), useDingbats=FALSE)
     print(ElbowPlot(object=UMI, ndims=30))
     invisible(dev.off())
-    cat(paste0(silver("Plots saved in: ")),bold(silver("02.PreProcessing dedicated subfolder \n")))
-    cat(paste0(cyan("\nOnce identified the PCs number to use in your analysis, perform clustering running "),bold(cyan("CalculateCluster \n"))))
+    cat(paste0(crayon::silver("Plots saved in: ")),crayon::bold(crayon::silver("02.PreProcessing dedicated subfolder \n")))
+    cat(paste0(crayon::cyan("\nOnce identified the PCs number to use in your analysis, perform clustering running "),crayon::bold(crayon::cyan("CalculateCluster \n"))))
   }
   ### write log
   write.table(t(c(as.character(as.POSIXct(Sys.time())),"ApplyRegression:","variables",variables,"explore_PC",explore_PC)),file=file.path(out_folder,"popsicleR.log"), sep="\t", row.names=F, col.names=F, quote=F, append=T)
@@ -1123,7 +1127,7 @@ CalculateCluster <- function(UMI, dim_pca, organism=c("human","mouse"), marker.l
     ftp_h = 5+(0.5*length(levels((umi.markers$cluster))))
 
     ### visualize markers by violin plots
-    cat(bold(green("Plotting Top Markers graphs for each cluster \n")))
+    cat(crayon::bold(crayon::green("Plotting Top Markers graphs for each cluster \n")))
 
     pdf(paste0(Cluster_dir, "/03e_Violin_Top_marker_genes.pdf"), width=12, height=9, useDingbats=FALSE)
     for(cluster in unique(top.markers.2$cluster)) {
@@ -1191,7 +1195,7 @@ CalculateCluster <- function(UMI, dim_pca, organism=c("human","mouse"), marker.l
 
   #Plotting UMAP and TSNE for immune markers
   ftp_h = 4*(ceiling(length(unlist(marker.list))/4))
-  cat(bold(green("Plotting Markers graphs for each cluster \n")))
+  cat(crayon::bold(crayon::green("Plotting Markers graphs for each cluster \n")))
   popsicleR:::FTP(UMI, Cluster_dir, "03h_", "umap", ftp_h, unlist(marker.list), "_marker_list")
   popsicleR:::FTP(UMI, Cluster_dir, "03h_", "tsne", ftp_h, unlist(marker.list), "_marker_list")
 
@@ -1229,8 +1233,8 @@ CalculateCluster <- function(UMI, dim_pca, organism=c("human","mouse"), marker.l
   }
   invisible(dev.off())
 
-  cat(paste0(silver("Plots saved in: ")),bold(silver("03.Clustering")), silver("folder \n"))
-  cat(paste0(cyan("Next suggested step is annotation, run "),bold(cyan("MakeAnnotation \n"))))
+  cat(paste0(crayon::silver("Plots saved in: ")),crayon::bold(crayon::silver("03.Clustering")), crayon::silver("folder \n"))
+  cat(paste0(crayon::cyan("Next suggested step is annotation, run "),crayon::bold(crayon::cyan("MakeAnnotation \n"))))
   ### write log
   write.table(t(c(as.character(as.POSIXct(Sys.time())),"CalculateCluster:","dim_pca",dim_pca,"cluster_res",cluster_res)),file=file.path(out_folder,"popsicleR.log"), sep="\t", row.names=F, col.names=F, quote=F, append=T)
 
@@ -1331,12 +1335,12 @@ MakeAnnotation <- function(UMI, organism=c("human","mouse"), marker.list='none',
 
     hpca.se <- suppressMessages(celldex::HumanPrimaryCellAtlasData())
     BpEn.se <- suppressMessages(celldex::BlueprintEncodeData())
-    cat(bold(green("Plotting single cell and cluster annotations \n")))
+    cat(crayon::bold(crayon::green("Plotting single cell and cluster annotations \n")))
     UMI <- SR_plots("hpca", hpca.se, UMI, Annot_dir, cluster_res)
     UMI <- SR_plots("BpEn", BpEn.se, UMI, Annot_dir, cluster_res)
 
     annotations <- c("hpca.sc.main.labels","BpEn.sc.main.labels")
-    cat(bold(green("Plotting dimensional reduction graphs for each population found in the sample \n")))
+    cat(crayon::bold(crayon::green("Plotting dimensional reduction graphs for each population found in the sample \n")))
     for(single_annot in annotations){
       annotation_plot(Annot_dir, "04c_", UMI, "UMAP", single_annot, "CellPopulations")
       annotation_plot(Annot_dir, "04c_",  UMI, "TSNE", single_annot, "CellPopulations")
@@ -1374,7 +1378,7 @@ MakeAnnotation <- function(UMI, organism=c("human","mouse"), marker.list='none',
     }
 
 
-    cat(paste0(silver("Plots saved in: ")),bold(silver("\\04.Annotation\\")), silver("folder \n"))
+    cat(paste0(crayon::silver("Plots saved in: ")),crayon::bold(crayon::silver("\\04.Annotation\\")), crayon::silver("folder \n"))
   } else if(organism == 'mouse') {
     require("scMCA")
     if(marker.list == 'none'){
@@ -1422,7 +1426,7 @@ MakeAnnotation <- function(UMI, organism=c("human","mouse"), marker.list='none',
     ### singleR with ImmGen and MouseRNAseq
     Ig.se <- suppressMessages(celldex::ImmGenData())
     mouseRNA.se <- suppressMessages(celldex::MouseRNAseqData())
-    cat(bold(green("Plotting single cell and cluster annotations \n")))
+    cat(crayon::bold(crayon::green("Plotting single cell and cluster annotations \n")))
     UMI <- popsicleR:::SR_plots("ImmGen", Ig.se, UMI, Annot_dir, cluster_res)
     UMI <- popsicleR:::SR_plots("MouseRNAseq", mouseRNA.se, UMI, Annot_dir, cluster_res)
 
@@ -1473,7 +1477,7 @@ MakeAnnotation <- function(UMI, organism=c("human","mouse"), marker.list='none',
     UMI$clean_labels <- clean_labels
 
     ### Plotting annotated populations localization in TSNE, UMAP and PCA. [scMCA]
-    cat(bold(green("Plotting dimensional reduction graphs for each population \n")))
+    cat(crayon::bold(crayon::green("Plotting dimensional reduction graphs for each population \n")))
     popsicleR:::annotation_plot(Annot_dir, "04c_", UMI, "UMAP", "clean_labels", "CellPopulations_scMCA")
     popsicleR:::annotation_plot(Annot_dir, "04c_", UMI, "TSNE", "clean_labels", "CellPopulations_scMCA")
 
@@ -1521,7 +1525,7 @@ MakeAnnotation <- function(UMI, organism=c("human","mouse"), marker.list='none',
     print(popsicleR:::DTP(UMI, marker.list, "scMCA_simple"))
     invisible(dev.off())
 
-    cat(paste0(silver("Plots saved in: "),bold(silver("\\04.Annotation\\")), silver(" folder \n")))
+    cat(paste0(crayon::silver("Plots saved in: "),crayon::bold(crayon::silver("\\04.Annotation\\")), crayon::silver(" folder \n")))
 
 
     ### corrplot
@@ -1575,7 +1579,7 @@ scrubDoublets <- function(exp,
 
   if (is.null(n_neighbors)) n_neighbors <- round(0.5 * sqrt(ncol(exp)))
 
-  if (verbose) message(green("\nPreprocessing..."))
+  if (verbose) message(crayon::green("\nPreprocessing..."))
   E_obs <- t(exp) ### E_obs, ncell * ngene
   total_counts_obs <- apply(E_obs, 1, sum)
 
@@ -1584,7 +1588,7 @@ scrubDoublets <- function(exp,
   E_obs <- E_obs[,gene_filter]
   E_obs_norm <- E_obs_norm[,gene_filter]
 
-  if (verbose) message(green("Simulating doublets..."))
+  if (verbose) message(crayon::green("Simulating doublets..."))
   simulateDoublets.res <- simulateDoublets(E_obs, total_counts_obs, sim_doublet_ratio, synthetic_doublet_umi_subsampling)
   E_sim <- simulateDoublets.res$E_sim
   total_counts_sim <- simulateDoublets.res$total_counts_sim
@@ -1605,16 +1609,16 @@ scrubDoublets <- function(exp,
 
   pca.res <- pipeline_pca(E_obs_norm, E_sim_norm, n_prin_comps)
 
-  if (verbose) message(green("Calculating doublet scores..."))
+  if (verbose) message(crayon::green("Calculating doublet scores..."))
   doublet_scores <- calculateDoubletScores(pca.res$pca_obs, pca.res$pca_sim, n_neighbors)
 
   if (is.null(doublet_score_threshold)) {
-    if (verbose) message(green("Histogram of doublet scores..."))
+    if (verbose) message(crayon::green("Histogram of doublet scores..."))
     predicted_threshold <- histogramDoubletScores(doublet_scores$doublet_scores_obs, doublet_scores$doublet_scores_sim, directory)
     doublet_score_threshold <- predicted_threshold
   }
 
-  if (verbose) message(green("Call transcriptomes as doublets..."))
+  if (verbose) message(crayon::green("Call transcriptomes as doublets..."))
   predicted_doublets <- callDoublets(doublet_scores$doublet_scores_obs, doublet_scores$doublet_scores_sim, expected_doublet_rate, doublet_score_threshold, verbose)
   return(list(scrubDoublets = predicted_doublets, doublet_scores_obs = doublet_scores$doublet_scores_obs, doublet_scores_sim = doublet_scores$doublet_scores_sim))
 
@@ -1895,7 +1899,7 @@ histogramDoubletScores <- function(doublet_scores_obs, doublet_scores_sim, direc
   dat_sim$clust[dat_sim$doublet_scores > predicted_threshold] <- 2
   dat_sim$clust <- factor(dat_sim$clust)
 
-  cat(bold(green("\nPlotting histogram of doublet scores \n")))
+  cat(crayon::bold(crayon::green("\nPlotting histogram of doublet scores \n")))
   p_obs <- ggplot2::ggplot(dat_obs, aes(x = doublet_scores))
   p_obs <- p_obs + geom_histogram(aes(fill = clust), binwidth = 0.02, color = "grey50")
   p_obs <- p_obs + geom_vline(xintercept = predicted_threshold, color = "blue")
@@ -1915,7 +1919,7 @@ histogramDoubletScores <- function(doublet_scores_obs, doublet_scores_sim, direc
   pdf(paste0(directory,"/01i_histogram of doublet scores.pdf"),8,8, useDingbats=FALSE)
   gridExtra::grid.arrange(p_obs, p_sim, p_obs2, p_sim2, nrow = 2, ncol = 2)
   dev.off()
-  cat(paste0(silver("Plots saved in: ")),bold(silver("01.QC_Plots\\01i_histogram of doublet scores.pdf \n")))
+  cat(paste0(crayon::silver("Plots saved in: ")),crayon::bold(crayon::silver("01.QC_Plots\\01i_histogram of doublet scores.pdf \n")))
 
   return(predicted_threshold)
 
